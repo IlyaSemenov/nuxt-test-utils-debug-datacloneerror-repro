@@ -13,6 +13,11 @@ two views of the same bug: the leak itself (Nuxt), and one of its victims (`@nux
 npm install
 ```
 
+> [!IMPORTANT]
+> **Run this locally, on a regular Node runtime — it does not reproduce on StackBlitz / WebContainer.**
+> See [Why StackBlitz does not reproduce it](#why-stackblitz-does-not-reproduce-it) below.
+> Verified on Node v24.16.0 (macOS) and in CI on Linux.
+
 ## 1. The leak (no Vitest involved)
 
 ```sh
@@ -68,6 +73,31 @@ and `structuredClone` throws `DataCloneError` on any Proxy object.
 4. Any consumer that clones, serialises or otherwise inspects those objects breaks.
 
 Removing the module, or unsetting `DEBUG`, makes both commands pass.
+
+## Why StackBlitz does not reproduce it
+
+Inside WebContainer, Nuxt does enter debug mode, but the `on-change` proxies never end up in
+`nuxt.options`, so nothing breaks. `DEBUG=1 npm run check:proxy-leak` there prints:
+
+```
+debug: true
+experimental.debugModuleMutation: true
+nuxt.options is proxy: false
+nuxt.options.runtimeConfig is proxy: false
+proxied runtimeConfig keys: (none)
+structuredClone(runtimeConfig): OK
+```
+
+This is not a detection artifact: `structuredClone(new Proxy({}, {}))` does throw `DataCloneError`
+in WebContainer too, so leaked proxies would have been caught. For whatever reason the proxies
+simply do not survive module setup in that runtime.
+
+On plain Node the same command prints:
+
+```
+proxied runtimeConfig keys: public, app, nitro
+structuredClone(runtimeConfig): FAILED — DataCloneError: #<Object> could not be cloned.
+```
 
 ## Same class of problem, reported before
 
