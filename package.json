@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "test:with-debug-env": "DEBUG=1 vitest run"
+    "test:with-debug-env": "DEBUG=1 vitest run",
+    "check:proxy-leak": "node check-proxy-leak.mjs"
   },
   "devDependencies": {
     "@nuxt/kit": "^4.4.8",
